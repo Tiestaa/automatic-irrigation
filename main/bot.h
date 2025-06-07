@@ -1,4 +1,3 @@
-#pragma once
 #include <WiFiClientSecure.h>
 #include "http.h"
 #include "main.h"

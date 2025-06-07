@@ -3,9 +3,7 @@
 #include "sensors.h"
 #include "main.h"
 #include "bot.h"
-
-#define SSID "xxxxxx"
-#define PASS_WIFI "xxxxxx"
+#include "secrets.h"
 
 CronId id;
 Bot* bot;
@@ -28,7 +26,7 @@ void setup(){
   id = Cron.create("0 0 12 * * *", checkHumAndTempWrapper, false);
 
   // connect to wifi
-  WiFi.begin(SSID, PASS_WIFI);
+  WiFi.begin(SSID_WIFI, PASS_WIFI);
   Serial.println("\nConnecting");
 
   while(WiFi.status() != WL_CONNECTED){

@@ -1,10 +1,7 @@
+#include "secrets.h"
 #include "bot.h"
 #include "sensors.h"
 
-
-// config
-#define BOT_TOKEN "xxxxxxxxxxxx"
-#define CHAT_ID "xxxxxxxx"
 
 //check message every second
 #define BOT_REQUEST_DELAY 1000

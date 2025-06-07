@@ -1,10 +1,6 @@
 #include <http.h>
 #include <HTTPClient.h>
-
-//openPlantBook API
-#define OPENPLANT_API_KEY String("xxxxxxxxxxxxxx")
-
-#define MIN_LENGTH_PLANT_NAME 3
+#include "secrets.h"
 
 const char* OPENPLANT_CERTIFICATE_ROOT = 
 "-----BEGIN CERTIFICATE-----\n" \

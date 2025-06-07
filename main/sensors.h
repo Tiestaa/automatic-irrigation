@@ -1,5 +1,3 @@
-#pragma once
-
 #define MIN_WATER_FOR_PUMP 2.5
 
 void sensorsInit();
