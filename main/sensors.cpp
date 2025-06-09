@@ -59,7 +59,7 @@ int getSoilMoisture() {
 }
 
 void sensorsInit() {
-    // ultrasonic - distance
+  // ultrasonic - distance
   pinMode(ULTRA_TRIG_PIN, OUTPUT);
   pinMode(ULTRA_ECHO_PIN, INPUT);
 

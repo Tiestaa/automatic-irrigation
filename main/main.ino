@@ -18,12 +18,9 @@ void checkHumAndTempWrapper() {
 void setup(){
   Serial.begin(115200);
 
-  sensorsInit();
-  reset();
-  bot = new Bot();
-  bot->begin();
+  delay(1000);
 
-  id = Cron.create("0 0 12 * * *", checkHumAndTempWrapper, false);
+  Serial.println("Done. Connect to Wifi");
 
   // connect to wifi
   WiFi.begin(SSID_WIFI, PASS_WIFI);
@@ -37,12 +34,26 @@ void setup(){
   Serial.println("\nConnected to the WiFi network");
   Serial.print("Local ESP32 IP: ");
   Serial.println(WiFi.localIP());
+
+  Serial.println("initialize sensors");
+
+  sensorsInit();
+
+  Serial.println("Done. Initialize consts");
+  reset();
+  Serial.println("Done. Init Bot");
+  bot = new Bot();
+  bot->begin();
+  Serial.println("Done.");
+
+  //Serial.println("Create Cron");
+
+  id = Cron.create("0 0 12 * * *", checkHumAndTempWrapper, false);
 }
 
 /*** LOOP ***/
 
 void loop() {
-
   if (bot->isSetupDone()){
     //check if bucket is almost empty. stopIrrigation per entrare solo una volta nell'if
     if(isBucketToRefill() && !stopIrrigation){
@@ -53,10 +64,14 @@ void loop() {
     // check humidity of soil and water availability. If so, water the plant
     if(needToIrrigate() && !stopIrrigation){
       activatePump();
+      delay(300);
     }
   }
 
-  bot->update();
+  if (WiFi.status() == WL_CONNECTED){
+    bot->update();
+  }
+  delay(1000);
 }
 
 

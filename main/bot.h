@@ -25,6 +25,7 @@ enum BOT_COMMAND {
 
 class Bot{
   public:
+    Bot();
     void begin();
     void update();
     bool isSetupDone();
@@ -33,7 +34,6 @@ class Bot{
 
   private:
   bool setupDone;
-  int numNewMessages;
   unsigned long lastCheck;
   UniversalTelegramBot* bot;
   WiFiClientSecure telegramClient;

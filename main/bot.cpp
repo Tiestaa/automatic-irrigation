@@ -50,26 +50,39 @@ String getHelpMessage() {
   return help;
 }
 
+Bot::Bot() {
+  setupDone = false;
+  lastCheck = millis();
+  bot = nullptr;
+  http = nullptr;
+}
 
-
-
-void Bot::begin(){
+void Bot::begin() {
   telegramClient.setCACert(TELEGRAM_CERTIFICATE_ROOT);
+  Serial.println("Initializing Telegram client...");
   bot = new UniversalTelegramBot(BOT_TOKEN, telegramClient);
+  Serial.println("Telegram client done. Init HTTP...");
   http = new HTTPRequest();
-  http -> begin();
-  
+  delay(400);
   bot->sendMessage(CHAT_ID, "To setup watering system, send command /start");
+  Serial.println("Start message sent");
 }
 
 void Bot::update(){
   if (millis() > lastCheck + BOT_REQUEST_DELAY)  {
+    Serial.print("check for new messages...");
     // handle message from telegram
-    numNewMessages = bot->getUpdates(bot->last_message_received+1);
-    for(int i = 0; i < numNewMessages; i++){
-      handleMessage(bot->messages[i]);
+    int numNewMessages = bot->getUpdates(bot->last_message_received+1);
+    if (numNewMessages == 0){
+      Serial.println("No messages");
+    } else {
+      Serial.println("Messages");
     }
-    numNewMessages = 0;
+    for(int i = 0; i < numNewMessages; i++){
+      if (bot-> messages[i].text.length() > 0){
+        handleMessage(bot->messages[i]);
+      }
+    }
     lastCheck = millis();
   }
 }
@@ -83,6 +96,9 @@ void Bot::handleMessage(telegramMessage message){
     return;
   }
 
+  Serial.print("user message: ");
+  Serial.println(message.text);
+
   BOT_COMMAND cmd = stringCommandToEnum(message.text);
 
   switch (cmd) {
@@ -94,14 +110,24 @@ void Bot::handleMessage(telegramMessage message){
       if (setupDone) 
         bot->sendMessage(message.chat_id, "Watering system already configured. If you want to reset, use commnad /reset", "");
       else {
-        plantInfo* plant = queryUserSetup(message.chat_id);
+        plantInfo* plant = this->queryUserSetup(message.chat_id);
         updateParameters(plant, message.chat_id);
+        // //DEBUG:
+        //   maxPlantSoilMoisture = 60;
+        //   minPlantSoilMoisture = 30;
+        //   minPlantTemperature = 5;
+        //   maxPlantTemperature = 30;
+        //   minPlantHumidity = 30;
+        //   maxPlantHumidity = 80;
+        //   plantName = "Ocimum Basilicum";
+          setupDone = true;
       }
       break;
     }
     case RESET:{
       reset();
       bot->sendMessage(message.chat_id, "Watering system reset done. Restart configuration using command /start.", "");
+      setupDone = false;
       break;
     }
     case WATER_REFILLED:{
@@ -151,6 +177,7 @@ String Bot::waitForNextMessage() {
 BOT_COMMAND Bot::stringCommandToEnum(String command){
   command.toLowerCase();
   if(!setupDone && command != commandList[START].command) return INVALID;
+  Serial.println(command);
   for(int i = 0; i < COMMAND_COUNT; i++){
     if (command == commandList[i].command) return (BOT_COMMAND)i;
   }
@@ -160,7 +187,6 @@ BOT_COMMAND Bot::stringCommandToEnum(String command){
 plantInfo* Bot::queryUserSetup(String chatId){
   String plantToSearch = "";
   bool waitingResFromList = false;
-  int numNewMessages = 0;
   long indexChosen = 0;
   StaticJsonDocument<1024> doc;
 
@@ -169,12 +195,17 @@ plantInfo* Bot::queryUserSetup(String chatId){
   strcpy(plant->pid, "");
   strcpy(plant->image, "");
 
+  delay(100);
   bot->sendMessage(chatId, "Welcome to watering System setup. Digit what plant do you wanna grow. \nIt's better to use scientific name.");
+  delay(100);
+
+  Serial.println("start while loop");
 
   //name not already init
   while (strcmp(plant->name, "") == 0){
 
     plantToSearch = waitForNextMessage();
+    Serial.println(plantToSearch);
 
     // User digit a number from list of plant of the request made before.
     if (waitingResFromList && (indexChosen = plantToSearch.toInt()) != 0){
@@ -195,16 +226,20 @@ plantInfo* Bot::queryUserSetup(String chatId){
     }
 
     plantToSearch = http->encodeHttpString(plantToSearch);
+    Serial.print("plantToSearch -> ");
+    Serial.println(plantToSearch);
 
     String uri = BASE_URL_API_OPENPLANT + URL_SEARCH_API_OPENPLANT + "?alias=" + plantToSearch + "&limit=10", chatId;
 
     String payload = http->requestOpenPlant(uri);
-    if (payload == "") break;
+    if (payload == "") continue;
 
     doc = http -> deserializePayload(payload, bot, chatId);
     if (doc.isNull()) continue;
 
     int count = doc["count"];
+    Serial.print("plant count: ");
+    Serial.println(count);
 
     if (count == 0) {
       bot->sendMessage(chatId, "No plant found. Try again.");
@@ -215,6 +250,11 @@ plantInfo* Bot::queryUserSetup(String chatId){
 
     // done if only one result. Can exit from while.
     if(count == 1){
+      Serial.print("plantToSearch -> ");
+      Serial.print(plantToSearch);
+      Serial.print("    plant picked -> ");
+      Serial.println(String(results[0]["pid"]));
+
       strcpy(plant->pid, results[0]["pid"]);
       strcpy(plant->name, results[0]["display_pid"]);
       break;
@@ -233,7 +273,8 @@ plantInfo* Bot::queryUserSetup(String chatId){
 
 void Bot::sendPlantListToUser(const String& query, JsonArray results, String chatId, int count) {
   String message = createMessageFromQueryResults(query, count, results);
-  bot->sendMessage(chatId, message.c_str());
+  Serial.println(message);
+  bot->sendMessage(CHAT_ID, message.c_str(), "");
 }
 
 void Bot::updateParameters(plantInfo* plant, String chatId){

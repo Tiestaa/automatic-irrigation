@@ -6,10 +6,10 @@
 
 class HTTPRequest{
   public:
+  HTTPRequest();
   String encodeHttpString(String input);
   String requestOpenPlant(String URL);
   StaticJsonDocument<1024> deserializePayload(String payload,UniversalTelegramBot* bot, String chatId);
-  void begin();
 
   private:
   WiFiClientSecure openPlantClient; 
